@@ -183,6 +183,9 @@ li.task.swiping .row-in{transition:none}
 .login .btn{width:100%}
 .account{margin:34px 0 0;text-align:center;font-size:13.5px;color:var(--muted)}
 .account button{border:0;background:none;color:var(--accent);font-weight:600;padding:4px}
+.push{margin-top:10px}
+.push .mini{border:1.5px solid var(--accent);background:none;color:var(--accent);border-radius:99px;padding:6px 14px;font-size:14px;font-weight:600}
+.push .ok{color:var(--accent);font-weight:600}
 .import{margin-top:14px}
 /* toast */
 .toast{position:fixed;bottom:0;inset-inline-start:50%;transform:translate(50%,20px);margin-bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);border-radius:14px;padding:11px 14px 11px 10px;display:flex;align-items:center;gap:14px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;white-space:nowrap}
@@ -234,7 +237,9 @@ li.task.swiping .row-in{transition:none}
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { firebaseConfig, members } from './config.js';
+import { getMessaging, getToken, isSupported } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js';
+import * as cfg from './config.js';
+const { firebaseConfig, members } = cfg;
 const CATS=[{id:'kitchen',name:'מטבח'},{id:'laundry',name:'בגדים וכביסה'},{id:'living',name:'סלון וכניסה'},{id:'balcony',name:'מרפסת'},{id:'bath',name:'שירותים ומקלחת'},{id:'bedrooms',name:'חדרי שינה'},{id:'general',name:'כללי'}];
 const CAT=Object.fromEntries(CATS.map(c=>[c.id,c.name]));
 const PEOPLE={shiri:'שירי',shachar:'שחר'};
@@ -362,8 +367,8 @@ onAuthStateChanged(auth,user=>{
   loginEl.hidden=true;
   const email=user.email||'';
   me=Object.keys(members).find(k=>members[k]===user.uid)||null;
-  document.getElementById('account').innerHTML=`מחובר/ת כ${me?PEOPLE[me]:esc(email)} <button id="logout">יציאה</button>`;
-  startSync();
+  document.getElementById('account').innerHTML=`מחובר/ת כ${me?PEOPLE[me]:esc(email)} <button id="logout">יציאה</button><div class="push" id="push"></div>`;
+  startSync(); renderPush(true);
 });
 document.getElementById('loginForm').addEventListener('submit',async e=>{
   e.preventDefault();
@@ -375,7 +380,48 @@ document.getElementById('loginForm').addEventListener('submit',async e=>{
 });
 window.addEventListener('online',statusFromMeta);
 window.addEventListener('offline',statusFromMeta);
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+/* ---------- push notifications (daily 8:00 summary) ---------- */
+const swReady='serviceWorker' in navigator?navigator.serviceWorker.register('sw.js').catch(()=>null):Promise.resolve(null);
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+async function pushState(){
+  if(!cfg.vapidKey||String(cfg.vapidKey).startsWith('PASTE')) return 'nokey';
+  let ok=false; try{ok=('Notification' in window)&&('serviceWorker' in navigator)&&await isSupported()}catch(e){}
+  if(!ok) return standalone()?'unsupported':'install';
+  return Notification.permission;
+}
+async function registerDevice(){
+  const reg=await swReady; if(!reg) throw new Error('no sw');
+  await navigator.serviceWorker.ready;
+  const token=await getToken(getMessaging(app),{vapidKey:cfg.vapidKey,serviceWorkerRegistration:reg});
+  if(!token) throw new Error('no token');
+  await setDoc(doc(fdb,'devices',token),{token,who:me,uid:auth.currentUser.uid,updatedAt:Date.now(),ua:navigator.userAgent.slice(0,140)});
+  return token;
+}
+async function renderPush(refresh){
+  const el=document.getElementById('push'); if(!el||!me) return;
+  const st=await pushState();
+  if(st==='granted'){
+    el.innerHTML='<span class="ok">סיכום יומי בטלפון ב־8:00 פעיל</span>';
+    if(refresh) registerDevice().catch(e=>console.error(e));
+  } else if(st==='default'){
+    el.innerHTML='<button class="mini" id="enablePush">הפעלת סיכום יומי בטלפון</button>';
+  } else if(st==='denied'){
+    el.textContent='ההתראות חסומות. אפשר להפעיל אותן בהגדרות הטלפון ← התראות';
+  } else if(st==='install'){
+    el.textContent='כדי לקבל התראות, פתחו את האפליקציה מהאייקון במסך הבית';
+  } else if(st==='unsupported'){
+    el.textContent='הטלפון הזה לא תומך בהתראות מהאפליקציה';
+  } else el.innerHTML='';
+}
+async function enablePush(){
+  const btn=document.getElementById('enablePush'); if(btn){btn.disabled=true;btn.textContent='מפעיל…'}
+  try{
+    const p=await Notification.requestPermission();
+    if(p!=='granted'){renderPush();return}
+    await registerDevice(); toast('מעולה, הסיכום היומי יגיע ב־8:00'); renderPush();
+  }catch(e){console.error(e);toast('ההפעלה נכשלה, נסו שוב');renderPush()}
+}
+document.addEventListener('click',e=>{if(e.target.closest('#enablePush'))enablePush()});
 
 /* ---------- rendering ---------- */
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
