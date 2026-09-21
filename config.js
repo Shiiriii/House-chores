@@ -12,3 +12,6 @@ export const members = {
   shiri: "7G5SNPgHYhVuqTfcErzz3KhdLt73",
   shachar: "8fgkWWw6cISyicy5LCEkjJIfHCf2"
 };
+
+// מפתח ההתראות (Cloud Messaging > Web Push certificates)
+export const vapidKey = "BJWFdIudE_gXWTo6zPE3WfeaxlZxiQJexSCO8isxTtei0rAH-gXA-cV8EWHVrJ4dvW_dNXbxc_Mja1c1iKXmEeE";
