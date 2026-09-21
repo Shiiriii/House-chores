@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>משימות הבית</title>
+<meta name="theme-color" content="#1D5E50">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="משימות הבית">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF3F1; --surface:#FFFFFF; --sunk:#E3EAE7; --ink:#15201D; --muted:#5B6966; --line:#D6DFDB;
+  --accent:#1D5E50; --accent-ink:#FFFFFF; --shiri:#8C3D7D; --shiri-soft:#F3E4F0; --shachar:#A26C12; --shachar-soft:#F6EBD6;
+  --late:#B8372B; --late-soft:#FBE6E3; --shadow:0 10px 30px rgba(21,32,29,.12);
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#101614; --surface:#18211E; --sunk:#141C19; --ink:#E6EEEB; --muted:#95A5A0; --line:#28332F;
+    --accent:#72C3AA; --accent-ink:#0D1A16; --shiri:#DB93CD; --shiri-soft:#3A2336; --shachar:#E0AE52; --shachar-soft:#3A2E17;
+    --late:#F28373; --late-soft:#3C1F1B; --shadow:0 10px 30px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101614; --surface:#18211E; --sunk:#141C19; --ink:#E6EEEB; --muted:#95A5A0; --line:#28332F;
+  --accent:#72C3AA; --accent-ink:#0D1A16; --shiri:#DB93CD; --shiri-soft:#3A2336; --shachar:#E0AE52; --shachar-soft:#3A2E17;
+  --late:#F28373; --late-soft:#3C1F1B; --shadow:0 10px 30px rgba(0,0,0,.45);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Heebo',system-ui,sans-serif;font-size:16px;line-height:1.45}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px 120px}
+
+/* header */
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.date{font-size:15px;color:var(--muted);font-weight:500}
+.saved{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap}
+.saved .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.saved.busy .dot{background:var(--shachar);animation:pulse 1s infinite}
+.saved.err{color:var(--late)} .saved.err .dot{background:var(--late)}
+@keyframes pulse{50%{opacity:.3}}
+h1{font-size:34px;line-height:1.05;font-weight:800;letter-spacing:-.5px;margin:6px 0 14px}
+h1 small{display:block;font-size:17px;font-weight:400;letter-spacing:0;color:var(--muted);margin-top:6px}
+
+/* today split bar */
+.split{background:var(--surface);border-radius:18px;padding:14px 16px;margin-bottom:14px}
+.bar{display:flex;height:12px;border-radius:99px;overflow:hidden;background:var(--sunk);gap:3px}
+.bar span{display:block;height:100%;border-radius:99px;transition:flex-grow .4s ease}
+.bar .s{background:var(--shiri)} .bar .c{background:var(--shachar)}
+.legend{display:flex;justify-content:space-between;margin-top:9px;font-size:14px}
+.legend b{font-weight:700}
+.legend .ls b{color:var(--shiri)} .legend .lc b{color:var(--shachar)}
+
+/* reminder banner */
+.remind{display:flex;gap:11px;align-items:flex-start;border-radius:16px;padding:11px 14px;margin-bottom:8px;color:var(--surface)}
+.remind.shiri{background:var(--shiri)} .remind.shachar{background:var(--shachar)}
+#remind:not(:empty){margin-bottom:14px}
+.remind svg{flex:none;margin-top:2px}
+.remind p{margin:0;font-size:14.5px;flex:1}
+.remind p b{display:block;font-size:15.5px}
+.remind button{background:none;border:0;color:inherit;opacity:.8;padding:2px;font-size:20px;line-height:1}
+
+/* controls */
+.controls{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:4px 0 10px;flex-wrap:wrap}
+.seg{display:inline-flex;background:var(--sunk);border-radius:12px;padding:3px}
+.seg button{border:0;background:none;padding:7px 13px;border-radius:9px;font-size:14.5px;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* sections & rows */
+section{margin-top:20px}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;padding:0 4px 7px}
+.sec-h h2{margin:0;font-size:18px;font-weight:700}
+.sec-h span{font-size:13.5px;color:var(--muted)}
+.sec-h.late h2{color:var(--late)}
+ul{list-style:none;margin:0;padding:0;background:var(--surface);border-radius:18px;overflow:hidden}
+li.task{position:relative;border-top:1px solid var(--line);cursor:pointer;touch-action:pan-y;overflow:hidden}
+li.task:first-child{border-top:0}
+.row-in{position:relative;display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);transition:transform .22s ease}
+li.task.swiping .row-in{transition:none}
+.swipe-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:0 18px;background:var(--shachar-soft);color:var(--ink);font-weight:600;font-size:14.5px}
+.swipe-bg.ready{background:var(--accent);color:var(--accent-ink)}
+.check{flex:none;width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:none;display:grid;place-items:center;padding:0;transition:background .2s,border-color .2s}
+.check svg{opacity:0;transition:opacity .2s}
+.check:hover{border-color:var(--accent)}
+.task.done .check{background:var(--accent);border-color:var(--accent)}
+.task.done .check svg{opacity:1}
+.task.done .t-title{text-decoration:line-through;color:var(--muted)}
+.task.is-done{opacity:.5}
+.task.is-done .check{background:var(--muted);border-color:var(--muted)}
+.task.is-done .check svg{opacity:1}
+.task.is-done .t-title{text-decoration:line-through;color:var(--muted);font-weight:400}
+.task.is-done .who{color:var(--muted)}
+.t-body{flex:1;min-width:0}
+.t-title{font-weight:500;font-size:16px}
+.t-meta{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px;color:var(--muted);margin-top:2px}
+.who{font-weight:600}
+.who.shiri{color:var(--shiri)} .who.shachar{color:var(--shachar)}
+.t-side{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:left}
+.due{font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap}
+.due.today{color:var(--accent);font-weight:700}
+.due.late{color:var(--late);font-weight:700}
+.icons{display:flex;gap:6px;color:var(--muted)}
+.empty-row{padding:18px 16px;color:var(--muted);font-size:15px;background:var(--surface);border-radius:18px}
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-size:20px;margin-bottom:6px}
+
+/* fab */
+.fab{position:fixed;bottom:0;inset-inline-start:50%;transform:translateX(50%);margin-bottom:calc(18px + env(safe-area-inset-bottom,0px));border:0;background:var(--ink);color:var(--bg);border-radius:99px;padding:14px 24px;font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow);z-index:5}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,16,14,.42);opacity:0;pointer-events:none;transition:opacity .25s;z-index:10}
+.scrim.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;bottom:0;left:0;right:0;margin:0 auto;max-width:560px;max-height:94%;overflow-y:auto;background:var(--bg);border-radius:22px 22px 0 0;padding:8px 16px calc(16px + env(safe-area-inset-bottom,0px));touch-action:pan-y;transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:11;overscroll-behavior:contain}
+.sheet.open{transform:none}
+.sheet.dragging{transition:none}
+@media (prefers-reduced-motion:reduce){.sheet,.scrim,.bar span{transition:none}}
+.grab{width:40px;height:5px;border-radius:99px;background:var(--line);margin:0 auto 8px}
+.sheet-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.sheet-h h3{margin:0;font-size:19px;font-weight:800}
+.link{border:0;background:none;color:var(--accent);font-weight:700;padding:6px 4px}
+.title-in{width:100%;border:0;background:var(--surface);border-radius:12px;padding:11px 13px;font-size:17px;font-weight:500}
+.title-in::placeholder{color:var(--muted);font-weight:400}
+.field{margin-top:12px}
+.field > label, .f-label{display:block;font-size:13.5px;font-weight:600;margin-bottom:6px}
+.f-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.f-row .f-label{margin:0}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:12px;align-items:end}
+.pair .field{margin-top:0;min-width:0}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 11px;font-size:14px}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink);font-weight:600}
+.seg .person{font-weight:600}
+.seg .person.shiri[aria-pressed="true"]{color:var(--shiri)}
+.seg .person.shachar[aria-pressed="true"]{color:var(--shachar)}
+.custom{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+.custom input,.custom select,.date-in,.min-in{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:5px 8px}
+.custom input{width:48px;text-align:center}
+.date-in,.min-in{display:block;width:100%;min-width:0;max-width:100%;height:40px;min-height:40px;margin:0;padding:0 10px;line-height:38px;font-size:15px;-webkit-appearance:none;appearance:none;text-align:right}
+.date-in::-webkit-date-and-time-value{text-align:right;margin:0}
+.date-in::-webkit-calendar-picker-indicator{margin:0;opacity:.6}
+.min-in{padding-inline-end:10px;padding-inline-start:28px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238a9794' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 10px center}
+.seg.full{display:flex;width:100%}
+.seg.full button{padding:7px 8px}
+.seg.full button{flex:1}
+.row-toggle{display:flex;justify-content:space-between;align-items:center;background:var(--surface);border-radius:12px;padding:9px 13px}
+.row-toggle b{display:block;font-weight:600}
+.row-toggle span{font-size:13px;color:var(--muted)}
+.switch{flex:none;position:relative;width:52px;height:31px;border-radius:99px;border:0;background:var(--line);padding:0;transition:background .2s}
+.switch::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:25px;height:25px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:inset-inline-start .2s}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{inset-inline-start:24px}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 2px}
+.actions .last{font-size:13.5px;color:var(--muted);flex:1 1 auto}
+.actions .mini{border:1.5px solid var(--accent);background:none;color:var(--accent);border-radius:99px;padding:4px 12px;font-size:14px;font-weight:600}
+.actions .snooze{margin:0;flex-basis:100%;gap:6px}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:700;font-size:16px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);width:100%}
+.btn.primary:disabled{opacity:.4}
+.snooze{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:14px;color:var(--muted)}
+.danger{display:block;margin:12px auto 0;border:0;background:none;color:var(--late);font-weight:600;padding:6px;font-size:14.5px}
+.foot{margin-top:14px}
+
+/* login */
+.login{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+.login[hidden]{display:none}
+.login form{width:100%;max-width:360px}
+.login h2{font-size:32px;font-weight:800;margin:0 0 4px}
+.login p{color:var(--muted);margin:0 0 22px}
+.login input{display:block;width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;font-size:16px;margin-bottom:10px;direction:ltr;text-align:left}
+.login .err{color:var(--late);font-size:14px;min-height:20px;margin:4px 0 8px}
+.login .btn{width:100%}
+.account{margin:34px 0 0;text-align:center;font-size:13.5px;color:var(--muted)}
+.account button{border:0;background:none;color:var(--accent);font-weight:600;padding:4px}
+.import{margin-top:14px}
+/* toast */
+.toast{position:fixed;bottom:0;inset-inline-start:50%;transform:translate(50%,20px);margin-bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);border-radius:14px;padding:11px 14px 11px 10px;display:flex;align-items:center;gap:14px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(50%,0);pointer-events:auto}
+.toast button{border:0;background:none;color:var(--bg);font-weight:700;text-decoration:underline;padding:2px 4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="date" id="date"></div>
+    <div class="saved" id="saved"><span class="dot"></span><span id="savedTxt">טוען…</span></div>
+  </div>
+  <h1 id="headline">משימות הבית</h1>
+  <div id="remind"></div>
+  <div class="split" id="split"></div>
+  <div class="controls">
+    <div class="seg" role="group" aria-label="תצוגה">
+      <button data-view="time" aria-pressed="true">לפי זמן</button>
+      <button data-view="room" aria-pressed="false">לפי חדר</button>
+    </div>
+    <div class="seg" role="group" aria-label="סינון לפי אחראי">
+      <button data-who="all" aria-pressed="true">כולם</button>
+      <button data-who="shiri" aria-pressed="false">שירי</button>
+      <button data-who="shachar" aria-pressed="false">שחר</button>
+    </div>
+  </div>
+  <div id="list"></div>
+  <div class="account" id="account"></div>
+</div>
+<div class="login" id="login" hidden>
+  <form id="loginForm" autocomplete="on">
+    <h2>משימות הבית</h2>
+    <p>כניסה עם האימייל והסיסמה שהוגדרו לכם</p>
+    <input type="email" id="email" placeholder="אימייל" autocomplete="username" required>
+    <input type="password" id="password" placeholder="סיסמה" autocomplete="current-password" required>
+    <div class="err" id="loginErr" role="alert"></div>
+    <button class="btn primary" type="submit" id="loginBtn">כניסה</button>
+  </form>
+</div>
+
+<button class="fab" id="addBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>משימה חדשה</button>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div>
+<div class="toast" id="toast"><span id="toastTxt"></span><button id="undoBtn">ביטול</button></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { firebaseConfig, members } from './config.js';
+const CATS=[{id:'kitchen',name:'מטבח'},{id:'laundry',name:'בגדים וכביסה'},{id:'living',name:'סלון וכניסה'},{id:'balcony',name:'מרפסת'},{id:'bath',name:'שירותים ומקלחת'},{id:'bedrooms',name:'חדרי שינה'},{id:'general',name:'כללי'}];
+const CAT=Object.fromEntries(CATS.map(c=>[c.id,c.name]));
+const PEOPLE={shiri:'שירי',shachar:'שחר'};
+const PRESETS=[{l:'כל יום',e:1,u:'day'},{l:'כל שבוע',e:1,u:'week'},{l:'כל שבועיים',e:2,u:'week'},{l:'כל חודש',e:1,u:'month'},{l:'כל חודשיים',e:2,u:'month'},{l:'כל 3 חודשים',e:3,u:'month'},{l:'כל חצי שנה',e:6,u:'month'},{l:'כל שנה',e:12,u:'month'}];
+const MINUTES=[5,10,15,20,30,45,60,90,120];
+const LS='chores.tasks.v1';
+
+let tasks={}, view='time', who='all', loaded=false, reminderClosed={shiri:false,shachar:false};
+
+/* ---------- dates ---------- */
+const pad=n=>String(n).padStart(2,'0');
+const toStr=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const todayStr=()=>toStr(new Date());
+const diffDays=(a,b)=>Math.round((parse(b)-parse(a))/86400000);
+function addInterval(s,every,unit){
+  const d=parse(s); every=Math.max(1,+every||1);
+  if(unit==='day') d.setDate(d.getDate()+every);
+  else if(unit==='week') d.setDate(d.getDate()+7*every);
+  else{const day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+every);const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(day,last))}
+  return toStr(d);
+}
+const fmtLong=new Intl.DateTimeFormat('he-IL',{weekday:'long',day:'numeric',month:'long'});
+const fmtShort=new Intl.DateTimeFormat('he-IL',{day:'numeric',month:'short'});
+const fmtWd=new Intl.DateTimeFormat('he-IL',{weekday:'long'});
+
+/* ---------- task logic ---------- */
+function effDue(t){
+  const today=todayStr(); let d=t.due||today;
+  if(t.snooze&&t.snooze>d) d=t.snooze;
+  if(t.size!=='big'){let g=0;while(d<today&&g++<1000) d=addInterval(d,t.every,t.unit)}
+  return d;
+}
+function nextAfterDone(t){
+  const today=todayStr();
+  if(t.mode==='fixed'){let n=addInterval(t.due||today,t.every,t.unit),g=0;while(n<=today&&g++<1000) n=addInterval(n,t.every,t.unit);return n}
+  return addInterval(today,t.every,t.unit);
+}
+function freqLabel(e,u){
+  e=+e;
+  if(u==='day') return e===1?'כל יום':e===2?'כל יומיים':`כל ${e} ימים`;
+  if(u==='week') return e===1?'כל שבוע':e===2?'כל שבועיים':`כל ${e} שבועות`;
+  if(e===1) return 'כל חודש'; if(e===2) return 'כל חודשיים'; if(e===6) return 'כל חצי שנה'; if(e===12) return 'כל שנה'; if(e===24) return 'כל שנתיים';
+  return `כל ${e} חודשים`;
+}
+function minLabel(m){m=+m;if(!m)return '';if(m===60)return 'שעה';if(m===90)return 'שעה וחצי';if(m===120)return 'שעתיים';if(m>60)return `${Math.round(m/6)/10} שעות`;return `${m} דק׳`}
+function dueLabel(t){
+  const d=effDue(t), n=diffDays(todayStr(),d);
+  if(n<0) return {txt:n===-1?'באיחור של יום':n===-2?'באיחור של יומיים':`באיחור של ${-n} ימים`,cls:'late'};
+  if(n===0) return {txt:'היום',cls:'today'};
+  if(n===1) return {txt:'מחר',cls:''};
+  if(n<7) return {txt:'ב'+fmtWd.format(parse(d)),cls:''};
+  return {txt:fmtShort.format(parse(d)),cls:''};
+}
+function lastLabel(t){
+  if(!t.lastDone) return '';
+  const n=diffDays(t.lastDone,todayStr());
+  if(n<=0) return 'בוצע היום'; if(n===1) return 'בוצע אתמול'; if(n<14) return `בוצע לפני ${n} ימים`;
+  if(n<60) return `בוצע לפני ${Math.round(n/7)} שבועות`; const m=Math.round(n/30); return m<=1?'בוצע לפני חודש':`בוצע לפני ${m} חודשים`;
+}
+const isLate=t=>t.size==='big'&&effDue(t)<todayStr();
+const needsNow=t=>effDue(t)<=todayStr();
+const intervalDays=t=>t.unit==='day'?+t.every:t.unit==='week'?7*t.every:30*t.every;
+function isDone(t){if(!t.lastDone)return false;const since=diffDays(t.lastDone,todayStr());return since<Math.min(7,intervalDays(t))&&effDue(t)>todayStr()}
+
+/* ---------- storage: Firebase (auto-save + live sync + offline) ---------- */
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+let fdb;
+try{fdb=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})})}catch(e){fdb=getFirestore(app)}
+const tasksCol=collection(fdb,'tasks');
+let me=null, unsub=null, serverSeen=false, lastMeta=null;
+function setStatus(s){
+  const el=document.getElementById('saved'), tx=document.getElementById('savedTxt');
+  el.className='saved'+(s==='busy'?' busy':(s==='err'||s==='pending')?' err':'');
+  tx.textContent={busy:'שומר…',pending:'אין חיבור, יסונכרן בהמשך',err:'השמירה נכשלה',loading:'טוען…'}[s]||'נשמר ומסונכרן';
+}
+function statusFromMeta(){
+  if(!lastMeta) return;
+  if(!navigator.onLine) setStatus(lastMeta.hasPendingWrites?'pending':'pending');
+  else setStatus(lastMeta.hasPendingWrites?'busy':'ok');
+}
+function canEdit(){return true}
+const clean=o=>JSON.parse(JSON.stringify(o));
+function writeErr(e){console.error(e);if(e&&e.code==='permission-denied'){toast('אין הרשאה לשמור. בדקו את כללי האבטחה ב־Firebase')}else setStatus('err')}
+function persist(t){
+  tasks[t.id]=t; render();
+  setDoc(doc(tasksCol,t.id),clean(t)).catch(writeErr);
+}
+function removeTask(id){
+  delete tasks[id]; render();
+  deleteDoc(doc(tasksCol,id)).catch(writeErr);
+}
+async function importTasks(){
+  const btn=document.getElementById('importBtn'); if(btn){btn.disabled=true;btn.textContent='מייבא…'}
+  let IMPORT_TASKS;
+  try{({IMPORT_TASKS}=await import('./import-tasks.js'))}catch(e){toast('קובץ הייבוא לא נמצא');if(btn){btn.disabled=false;btn.textContent='ייבוא המשימות מהגרסה הקודמת'}return}
+  const batch=writeBatch(fdb);
+  IMPORT_TASKS.forEach(t=>batch.set(doc(tasksCol,t.id),clean(t)));
+  try{await batch.commit();toast('המשימות יובאו')}catch(e){writeErr(e);if(btn){btn.disabled=false;btn.textContent='ייבוא המשימות מהגרסה הקודמת'}}
+}
+function startSync(){
+  if(unsub) unsub();
+  setStatus('loading');
+  unsub=onSnapshot(tasksCol,{includeMetadataChanges:true},snap=>{
+    const next={}; snap.docs.forEach(d=>{next[d.id]=d.data()});
+    tasks=next; lastMeta=snap.metadata;
+    if(!snap.metadata.fromCache) serverSeen=true;
+    loaded=serverSeen||snap.size>0;
+    statusFromMeta(); render();
+  },err=>{
+    console.error(err);
+    if(err.code==='permission-denied'){
+      document.getElementById('list').innerHTML='<div class="empty"><b>החשבון הזה לא מורשה</b>צריך להוסיף את ה־User UID של החשבון לכללי האבטחה ב־Firebase</div>';
+      setStatus('err');
+    } else {setStatus('pending');setTimeout(startSync,5000)}
+  });
+}
+const loginEl=document.getElementById('login');
+onAuthStateChanged(auth,user=>{
+  if(!user){
+    if(unsub){unsub();unsub=null} tasks={}; loaded=false; serverSeen=false;
+    loginEl.hidden=false; document.getElementById('account').innerHTML=''; return;
+  }
+  loginEl.hidden=true;
+  const email=user.email||'';
+  me=Object.keys(members).find(k=>members[k]===user.uid)||null;
+  document.getElementById('account').innerHTML=`מחובר/ת כ${me?PEOPLE[me]:esc(email)} <button id="logout">יציאה</button>`;
+  startSync();
+});
+document.getElementById('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const err=document.getElementById('loginErr'), btn=document.getElementById('loginBtn');
+  err.textContent=''; btn.disabled=true; btn.textContent='נכנס…';
+  try{await signInWithEmailAndPassword(auth,document.getElementById('email').value.trim(),document.getElementById('password').value)}
+  catch(x){err.textContent=(x.code==='auth/network-request-failed')?'אין חיבור לאינטרנט':'האימייל או הסיסמה לא נכונים'}
+  finally{btn.disabled=false;btn.textContent='כניסה'}
+});
+window.addEventListener('online',statusFromMeta);
+window.addEventListener('offline',statusFromMeta);
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+
+/* ---------- rendering ---------- */
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const BELL='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="התראה פעילה"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>';
+const CHECK='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+function row(t,showCat){
+  const d=dueLabel(t), dn=isDone(t), last=lastLabel(t);
+  const canSnooze=!dn&&needsNow(t);
+  return `<li class="task${dn?' is-done':''}" data-id="${esc(t.id)}"${canSnooze?' data-swipe="1"':''}>
+    ${canSnooze?'<div class="swipe-bg" aria-hidden="true">דחייה למחר</div>':''}<div class="row-in">
+    <button class="check" ${dn?'data-undone':'data-done'}="${esc(t.id)}" aria-label="${dn?'ביטול הסימון של ':'סימון '}${esc(t.title)}${dn?'':' כבוצע'}">${CHECK}</button>
+    <div class="t-body"><div class="t-title">${esc(t.title)}</div>
+      <div class="t-meta"><span class="who ${t.who}">${PEOPLE[t.who]||''}</span>${showCat?`<span>${CAT[t.cat]||''}</span>`:''}<span>${freqLabel(t.every,t.unit)}</span>${last?`<span>${last}</span>`:''}</div></div>
+    <div class="t-side"><span class="due ${dn?'':d.cls}">${dn?'הבא: '+d.txt:d.txt}</span><span class="icons">${t.notify?BELL:''}${t.minutes?`<span style="font-size:12.5px">${minLabel(t.minutes)}</span>`:''}</span></div>
+  </div></li>`;
+}
+function section(title,items,showCat,cls='',note=''){
+  if(!items.length) return '';
+  const mins=items.reduce((a,t)=>a+(+t.minutes||0),0);
+  return `<section><div class="sec-h ${cls}"><h2>${title}</h2><span>${note||(items.length+' משימות'+(mins?`, ${minLabel(mins)}`:''))}</span></div><ul>${items.map(t=>row(t,showCat)).join('')}</ul></section>`;
+}
+const byDue=(a,b)=>effDue(a).localeCompare(effDue(b))||a.title.localeCompare(b.title,'he');
+
+function render(){
+  const today=todayStr();
+  document.getElementById('date').textContent=fmtLong.format(new Date());
+  const all=Object.values(tasks).filter(t=>t&&t.title);
+  const now=all.filter(needsNow);
+  const nowCount=now.length;
+  document.getElementById('headline').innerHTML=!loaded&&!all.length?'משימות הבית':
+    nowCount?`${nowCount===1?'משימה אחת':nowCount+' משימות'} להיום<small>${now.some(isLate)?'כולל משימות גדולות שמחכות':'אפשר לסמן כל משימה ברגע שסיימתם'}</small>`:
+    `הכול פנוי היום<small>${all.length?'המשימה הבאה: '+esc(all.sort(byDue)[0].title)+', '+dueLabel(all.sort(byDue)[0]).txt:'אפשר להתחיל בהוספת משימה ראשונה'}</small>`;
+
+  // split
+  const sm=now.filter(t=>t.who==='shiri').reduce((a,t)=>a+(+t.minutes||0),0);
+  const cm=now.filter(t=>t.who==='shachar').reduce((a,t)=>a+(+t.minutes||0),0);
+  const split=document.getElementById('split');
+  if(!all.length){split.style.display='none'} else {
+    split.style.display='';
+    split.innerHTML=`<div class="bar" aria-hidden="true"><span class="s" style="flex-grow:${sm||(sm+cm?0:1)}"></span><span class="c" style="flex-grow:${cm||(sm+cm?0:1)}"></span></div>
+      <div class="legend"><span class="ls">שירי <b>${sm?minLabel(sm):'פנויה'}</b></span><span class="lc">שחר <b>${cm?minLabel(cm):'פנוי'}</b></span></div>`;
+  }
+
+  // reminder banner
+  const rem=now.filter(t=>t.notify);
+  document.getElementById('remind').innerHTML=['shiri','shachar'].filter(p=>who==='all'||who===p).map(p=>{
+    const r=rem.filter(t=>t.who===p); if(reminderClosed[p]||!r.length) return '';
+    return `<div class="remind ${p}" role="status">${BELL.replace('14','18').replace('14','18')}
+      <p><b>${PEOPLE[p]}, ${r.length===1?'תזכורת אחת להיום':r.length+' תזכורות להיום'}</b>${r.slice(0,4).map(t=>esc(t.title)).join(', ')}${r.length>4?' ועוד':''}</p>
+      <button data-close-remind="${p}" aria-label="סגירת התזכורות של ${PEOPLE[p]}">×</button></div>`}).join('');
+
+  const list=document.getElementById('list');
+  const vis=all.filter(t=>who==='all'||t.who===who);
+  if(!loaded&&!all.length){list.innerHTML='<div class="empty">טוען את המשימות…</div>';return}
+  if(!all.length){list.innerHTML=`<div class="empty"><b>עוד אין משימות</b>אפשר להוסיף משימה בכפתור למטה${!location.search.includes('noimport')?`<div class="import"><button class="btn primary" id="importBtn" style="width:auto">ייבוא המשימות מהגרסה הקודמת</button></div>`:''}</div>`;return}
+  if(!vis.length){list.innerHTML=`<div class="empty"><b>אין משימות ל${PEOPLE[who]}</b>אפשר לשייך משימות במסך העריכה</div>`;return}
+
+  let html='';
+  if(view==='time'){
+    const done=vis.filter(isDone).sort((a,b)=>b.lastDone.localeCompare(a.lastDone)||a.title.localeCompare(b.title,'he'));
+    const open=vis.filter(t=>!isDone(t));
+    const late=open.filter(isLate).sort(byDue);
+    const tod=open.filter(t=>!isLate(t)&&effDue(t)===today).sort(byDue);
+    const week=open.filter(t=>{const n=diffDays(today,effDue(t));return n>=1&&n<=7}).sort(byDue);
+    const later=open.filter(t=>diffDays(today,effDue(t))>7).sort(byDue);
+    html+=section('מחכות מזמן',late,true,'late');
+    html+=tod.length?section('היום',tod,true):(late.length?'':`<section><div class="sec-h"><h2>היום</h2></div><div class="empty-row">אין משימות להיום${who!=='all'?' ל'+PEOPLE[who]:''}</div></section>`);
+    html+=section('בשבוע הקרוב',week,true);
+    html+=section('בהמשך',later,true);
+    html+=section('בוצעו לאחרונה',done,true,'',done.length===1?'משימה אחת':done.length+' משימות');
+  } else {
+    CATS.forEach(c=>{const inCat=vis.filter(t=>t.cat===c.id);
+      const items=[...inCat.filter(t=>!isDone(t)).sort(byDue),...inCat.filter(isDone).sort(byDue)];
+      const nowN=items.filter(t=>!isDone(t)&&needsNow(t)).length;
+      html+=section(c.name,items,false,'',items.length+' משימות'+(nowN?`, ${nowN} להיום`:''))});
+  }
+  list.innerHTML=html;
+}
+
+/* ---------- actions ---------- */
+let toastTimer=null, undoFn=null;
+function toast(txt,undo){
+  document.getElementById('toastTxt').textContent=txt; undoFn=undo;
+  document.getElementById('undoBtn').style.display=undo?'':'none';
+  const el=document.getElementById('toast'); el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),4500);
+}
+document.getElementById('undoBtn').onclick=()=>{if(undoFn)undoFn();undoFn=null;document.getElementById('toast').classList.remove('show')};
+
+function markDone(id,fromRow){
+  if(!canEdit()) return;
+  const t=tasks[id]; if(!t) return;
+  const prev={...t};
+  const next={...t,due:nextAfterDone(t),lastDone:todayStr(),snooze:null,doneCount:(t.doneCount||0)+1,updatedAt:Date.now(),doneBy:me,
+    undo:{due:t.due||todayStr(),lastDone:t.lastDone||null,snooze:t.snooze||null,doneCount:t.doneCount||0}};
+  const go=()=>{persist(next);toast(`סומן כבוצע. הפעם הבאה: ${dueLabel(next).txt}`,()=>persist(prev))};
+  const li=fromRow&&document.querySelector(`li.task[data-id="${CSS.escape(id)}"]`);
+  if(li&&!matchMedia('(prefers-reduced-motion:reduce)').matches){li.classList.add('done');setTimeout(go,420)} else go();
+}
+function unmark(id){
+  if(!canEdit()) return;
+  const t=tasks[id]; if(!t) return; const prev={...t};
+  const u=t.undo||{due:todayStr(),lastDone:null,snooze:null,doneCount:Math.max(0,(t.doneCount||1)-1)};
+  const next={...t,...u,undo:null,updatedAt:Date.now()};
+  persist(next); toast('הסימון בוטל',()=>persist(prev));
+}
+function snooze(id,days){
+  if(!canEdit()) return;
+  const t=tasks[id]; if(!t) return; const prev={...t};
+  const d=parse(todayStr()); d.setDate(d.getDate()+days);
+  const next={...t,snooze:toStr(d),updatedAt:Date.now()};
+  persist(next); closeSheet(); toast(`נדחה ל${dueLabel(next).txt==='מחר'?'מחר':dueLabel(next).txt}`,()=>persist(prev));
+}
+
+document.addEventListener('click',e=>{
+  const done=e.target.closest('[data-done]'); if(done){e.stopPropagation();markDone(done.dataset.done,true);return}
+  const und=e.target.closest('[data-undone]'); if(und){e.stopPropagation();unmark(und.dataset.undone);return}
+  if(e.target.closest('#importBtn')){importTasks();return}
+  if(e.target.closest('#logout')){signOut(auth);return}
+  const cr=e.target.closest('[data-close-remind]'); if(cr){reminderClosed[cr.dataset.closeRemind]=true;render();return}
+  const li=e.target.closest('li.task'); if(li){openSheet(li.dataset.id);return}
+  const v=e.target.closest('[data-view]'); if(v){view=v.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',b===v));render();return}
+  const w=e.target.closest('[data-who]'); if(w){who=w.dataset.who;document.querySelectorAll('[data-who]').forEach(b=>b.setAttribute('aria-pressed',b===w));render();return}
+});
+document.getElementById('addBtn').onclick=()=>openSheet(null);
+
+/* ---------- sheet ---------- */
+const sheet=document.getElementById('sheet'), scrim=document.getElementById('scrim');
+let draft=null, isNew=false, saveTimer=null, delArmed=false;
+function uid(){return 't'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function openSheet(id){
+  if(!canEdit()) return;
+  isNew=!id; delArmed=false;
+  draft=id?{...tasks[id]}:{id:uid(),title:'',cat:'kitchen',who:'shiri',every:1,unit:'week',mode:'done',due:todayStr(),lastDone:null,snooze:null,size:'small',minutes:15,notify:false,createdAt:Date.now()};
+  drawSheet(); sheet.classList.add('open'); scrim.classList.add('open');
+  if(isNew) setTimeout(()=>sheet.querySelector('.title-in')?.focus(),320);
+}
+function closeSheet(){
+  if(!isNew&&draft&&saveTimer){clearTimeout(saveTimer);saveTimer=null;if(draft.title.trim())persist({...draft,title:draft.title.trim()})}
+  sheet.classList.remove('open'); scrim.classList.remove('open'); draft=null;
+}
+scrim.onclick=closeSheet;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&draft)closeSheet()});
+function autosave(){
+  if(isNew) return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{saveTimer=null;if(draft&&draft.title.trim())persist({...draft,title:draft.title.trim(),updatedAt:Date.now()})},450);
+}
+function drawSheet(){
+  const t=draft; const presetHit=PRESETS.find(p=>p.e==t.every&&p.u===t.unit);
+  const late=!isNew&&tasks[t.id]&&needsNow(tasks[t.id]);
+  const cur=tasks[t.id]||t, dn=!isNew&&isDone(cur), last=lastLabel(cur);
+  sheet.innerHTML=`<div class="grab" aria-hidden="true"></div>
+  <div class="sheet-h"><h3 id="sheetTitle">${isNew?'משימה חדשה':'עריכת משימה'}</h3><button class="link" id="closeSheet">${isNew?'ביטול':'סיום'}</button></div>
+  ${!isNew?`<div class="actions"><div class="last">${last?last+(cur.doneBy&&PEOPLE[cur.doneBy]?' על ידי '+PEOPLE[cur.doneBy]:'')+'. ':''}מועד הבא: ${dueLabel(cur).txt}</div>
+    ${dn?`<button class="mini" id="undoNow">ביטול הסימון</button>`:`<button class="mini" id="doneNow">סימון כבוצע</button>`}
+    ${late&&!dn?`<div class="snooze">דחייה: <button class="chip" data-snooze="1">למחר</button><button class="chip" data-snooze="3">ל־3 ימים</button><button class="chip" data-snooze="7">לשבוע</button></div>`:''}</div>`:''}
+  <div class="field"><input id="tTitle" class="title-in" value="${esc(t.title)}" placeholder="מה צריך לעשות?" aria-label="שם המשימה" autocomplete="off"></div>
+  <div class="field"><span class="f-label">קטגוריה</span><div class="chips">${CATS.map(c=>`<button class="chip" data-cat="${c.id}" aria-pressed="${t.cat===c.id}">${c.name}</button>`).join('')}</div></div>
+  <div class="pair">
+    <div class="field"><span class="f-label">מי אחראי</span><div class="seg full">${Object.entries(PEOPLE).map(([k,v])=>`<button class="person ${k}" data-person="${k}" aria-pressed="${t.who===k}">${v}</button>`).join('')}</div></div>
+    <div class="field"><span class="f-label">גודל</span><div class="seg full"><button data-size="small" aria-pressed="${t.size!=='big'}" title="אם לא בוצעה, עוברת בשקט למחזור הבא">קטנה</button><button data-size="big" aria-pressed="${t.size==='big'}" title="אם לא בוצעה, נשארת מסומנת באיחור">גדולה</button></div></div>
+  </div>
+  <div class="field"><div class="f-row"><span class="f-label">כל כמה זמן</span>
+      <span class="custom">או כל <input type="number" id="every" min="1" max="99" inputmode="numeric" value="${t.every}" aria-label="מספר"> <select id="unit" aria-label="יחידה"><option value="day" ${t.unit==='day'?'selected':''}>ימים</option><option value="week" ${t.unit==='week'?'selected':''}>שבועות</option><option value="month" ${t.unit==='month'?'selected':''}>חודשים</option></select></span></div>
+    <div class="chips">${PRESETS.map((p,i)=>`<button class="chip" data-preset="${i}" aria-pressed="${presetHit===p}">${p.l}</button>`).join('')}</div></div>
+  <div class="field"><span class="f-label">הפעם הבאה נספרת</span>
+    <div class="seg full"><button data-mode="done" aria-pressed="${t.mode!=='fixed'}">מהביצוע האחרון</button><button data-mode="fixed" aria-pressed="${t.mode==='fixed'}">לפי לוח קבוע</button></div></div>
+  <div class="pair">
+    <div class="field"><label for="due">${isNew?'פעם ראשונה':'מועד הבא'}</label><input type="date" id="due" class="date-in" value="${t.snooze&&t.snooze>t.due?t.snooze:t.due}"></div>
+    <div class="field"><label for="minutes">זמן משוער</label><select id="minutes" class="min-in">${MINUTES.map(m=>`<option value="${m}" ${+t.minutes===m?'selected':''}>${minLabel(m)}</option>`).join('')}</select></div>
+  </div>
+  <div class="field"><div class="row-toggle"><b>התראה באפליקציה</b>
+    <button class="switch" role="switch" id="notify" aria-checked="${!!t.notify}" aria-label="התראה באפליקציה"></button></div></div>
+  ${isNew?`<div class="foot"><button class="btn primary" id="create" ${t.title.trim()?'':'disabled'}>הוספת משימה</button></div>`:
+   `<button class="danger" id="del">${delArmed?'לחיצה נוספת תמחק לצמיתות':'מחיקת המשימה'}</button>`}`;
+  bindSheet();
+}
+function change(patch,redraw=true){
+  Object.assign(draft,patch); autosave();
+  if(redraw){const y=sheet.scrollTop;drawSheet();sheet.scrollTop=y}
+}
+function bindSheet(){
+  const $=s=>sheet.querySelector(s);
+  $('#closeSheet').onclick=closeSheet;
+  const ti=$('#tTitle'); ti.oninput=()=>{draft.title=ti.value;autosave();const c=$('#create');if(c)c.disabled=!ti.value.trim()};
+  ti.onkeydown=e=>{if(e.key==='Enter'){ti.blur()}};
+  sheet.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>change({cat:b.dataset.cat}));
+  sheet.querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>change({who:b.dataset.person}));
+  sheet.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{const p=PRESETS[b.dataset.preset];change({every:p.e,unit:p.u})});
+  $('#every').onchange=e=>change({every:Math.max(1,Math.min(99,parseInt(e.target.value)||1))});
+  $('#unit').onchange=e=>change({unit:e.target.value});
+  sheet.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>change({mode:b.dataset.mode}));
+  sheet.querySelectorAll('[data-size]').forEach(b=>b.onclick=()=>change({size:b.dataset.size}));
+  $('#minutes').onchange=e=>change({minutes:+e.target.value},false);
+  $('#due').onchange=e=>{if(e.target.value)change({due:e.target.value,snooze:null},false)};
+  $('#notify').onclick=()=>change({notify:!draft.notify});
+  const un=$('#undoNow'); if(un) un.onclick=()=>{const id=draft.id;if(saveTimer){clearTimeout(saveTimer);saveTimer=null;tasks[id]={...draft}}sheet.classList.remove('open');scrim.classList.remove('open');draft=null;unmark(id)};
+  const dn=$('#doneNow'); if(dn) dn.onclick=()=>{const id=draft.id;if(saveTimer){clearTimeout(saveTimer);saveTimer=null;tasks[id]={...draft}}sheet.classList.remove('open');scrim.classList.remove('open');draft=null;markDone(id,false)};
+  sheet.querySelectorAll('[data-snooze]').forEach(b=>b.onclick=()=>{if(saveTimer){clearTimeout(saveTimer);saveTimer=null;tasks[draft.id]={...draft}}snooze(draft.id,+b.dataset.snooze)});
+  const cr=$('#create'); if(cr) cr.onclick=()=>{if(!draft.title.trim())return;const t={...draft,title:draft.title.trim(),updatedAt:Date.now()};isNew=false;draft=null;sheet.classList.remove('open');scrim.classList.remove('open');persist(t);toast('המשימה נוספה')};
+  const del=$('#del'); if(del) del.onclick=()=>{
+    if(!delArmed){delArmed=true;del.textContent='לחיצה נוספת תמחק לצמיתות';return}
+    const prev={...tasks[draft.id]||draft}; clearTimeout(saveTimer); saveTimer=null;
+    const id=draft.id; sheet.classList.remove('open'); scrim.classList.remove('open'); draft=null;
+    removeTask(id); toast('המשימה נמחקה',()=>persist(prev));
+  };
+}
+
+/* swipe right on a row: snooze to tomorrow */
+(()=>{
+  const list=document.getElementById('list');
+  let li=null,x0=0,y0=0,dx=0,active=false,suppress=false;
+  const TH=90;
+  list.addEventListener('touchstart',e=>{
+    const el=e.target.closest('li.task[data-swipe]'); if(!el||e.touches.length!==1){li=null;return}
+    li=el; x0=e.touches[0].clientX; y0=e.touches[0].clientY; dx=0; active=false;
+  },{passive:true});
+  list.addEventListener('touchmove',e=>{
+    if(!li) return;
+    const mx=e.touches[0].clientX-x0, my=e.touches[0].clientY-y0;
+    if(!active){
+      if(Math.abs(my)>10&&Math.abs(my)>Math.abs(mx)){li=null;return}
+      if(mx>10&&mx>Math.abs(my)){active=true;li.classList.add('swiping')} else return;
+    }
+    e.preventDefault(); dx=Math.max(0,mx);
+    const inner=li.querySelector('.row-in'); inner.style.transform=`translateX(${Math.min(dx,160)}px)`;
+    li.querySelector('.swipe-bg').classList.toggle('ready',dx>TH);
+  },{passive:false});
+  const end=()=>{
+    if(!li) return; const el=li; li=null;
+    if(!active) return;
+    suppress=true; setTimeout(()=>suppress=false,350);
+    el.classList.remove('swiping');
+    const inner=el.querySelector('.row-in');
+    if(dx>TH){inner.style.transform='translateX(100%)';setTimeout(()=>snooze(el.dataset.id,1),200)}
+    else inner.style.transform='';
+    active=false;
+  };
+  list.addEventListener('touchend',end); list.addEventListener('touchcancel',end);
+  list.addEventListener('click',e=>{if(suppress){e.stopPropagation();e.preventDefault()}},true);
+})();
+
+/* swipe down to close */
+(()=>{
+  let y0=null, dy=0, dragging=false, moved=false;
+  sheet.addEventListener('touchstart',e=>{
+    if(!draft||e.touches.length!==1) return;
+    const tag=e.target.tagName; if(tag==='INPUT'||tag==='SELECT') {y0=null;return}
+    y0=e.touches[0].clientY; dy=0; dragging=false; moved=false; startTop=sheet.scrollTop;
+  },{passive:true});
+  let startTop=0;
+  sheet.addEventListener('touchmove',e=>{
+    if(y0===null) return;
+    const d=e.touches[0].clientY-y0;
+    if(!dragging){ if(d>8&&sheet.scrollTop<=0&&startTop<=0){dragging=true;sheet.classList.add('dragging')} else if(Math.abs(d)>8){y0=null;return} else return; }
+    dy=Math.max(0,d); moved=true; e.preventDefault();
+    sheet.style.transform=`translateY(${dy}px)`; scrim.style.opacity=String(Math.max(0,1-dy/400));
+  },{passive:false});
+  const end=()=>{
+    if(y0===null&&!dragging) return;
+    sheet.classList.remove('dragging');
+    if(dragging){ sheet.style.transform=''; scrim.style.opacity=''; if(dy>90) closeSheet(); }
+    y0=null; dragging=false;
+  };
+  sheet.addEventListener('touchend',end); sheet.addEventListener('touchcancel',end);
+  sheet.addEventListener('click',e=>{if(moved){e.stopPropagation();e.preventDefault();moved=false}},true);
+})();
+
+render();
+setInterval(()=>{if(!draft)render()},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!draft)render()});
+</script>
+</body>
+</html>
