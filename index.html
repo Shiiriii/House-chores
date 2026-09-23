@@ -76,6 +76,7 @@ h1 small{display:block;font-size:17px;font-weight:400;letter-spacing:0;color:var
 .seg{display:inline-flex;background:var(--sunk);border-radius:12px;padding:3px}
 .seg button{border:0;background:none;padding:7px 13px;border-radius:9px;font-size:14.5px;font-weight:500;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.view-sel{border:0;background:var(--sunk) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238a9794' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat left 12px center;border-radius:12px;padding:9px 14px 9px 32px;font-size:14.5px;font-weight:600;-webkit-appearance:none;appearance:none}
 
 /* sections & rows */
 section{margin-top:20px}
@@ -203,10 +204,11 @@ li.task.swiping .row-in{transition:none}
   <div id="remind"></div>
   <div class="split" id="split"></div>
   <div class="controls">
-    <div class="seg" role="group" aria-label="תצוגה">
-      <button data-view="time" aria-pressed="true">לפי זמן</button>
-      <button data-view="room" aria-pressed="false">לפי חדר</button>
-    </div>
+    <select id="viewSel" class="view-sel" aria-label="תצוגת המשימות">
+      <option value="time">לפי זמן</option>
+      <option value="cat">לפי קטגוריה</option>
+      <option value="freq">לפי תדירות</option>
+    </select>
     <div class="seg" role="group" aria-label="סינון לפי אחראי">
       <button data-who="all" aria-pressed="true">כולם</button>
       <button data-who="shiri" aria-pressed="false">שירי</button>
@@ -493,11 +495,23 @@ function render(){
     html+=section('בשבוע הקרוב',week,true);
     html+=section('בהמשך',later,true);
     html+=section('בוצעו לאחרונה',done,true,'',done.length===1?'משימה אחת':done.length+' משימות');
-  } else {
+  } else if(view==='cat'){
     CATS.forEach(c=>{const inCat=vis.filter(t=>t.cat===c.id);
       const items=[...inCat.filter(t=>!isDone(t)).sort(byDue),...inCat.filter(isDone).sort(byDue)];
       const nowN=items.filter(t=>!isDone(t)&&needsNow(t)).length;
       html+=section(c.name,items,false,'',items.length+' משימות'+(nowN?`, ${nowN} להיום`:''))});
+  } else {
+    const groups={};
+    vis.forEach(t=>{const k=`${t.unit}:${+t.every}`;(groups[k]=groups[k]||[]).push(t)});
+    Object.keys(groups).sort((a,b)=>{
+      const g=k=>{const[u,e]=k.split(':');return intervalDays({unit:u,every:+e})};
+      return g(a)-g(b);
+    }).forEach(k=>{
+      const inG=groups[k], [u,e]=k.split(':');
+      const items=[...inG.filter(t=>!isDone(t)).sort(byDue),...inG.filter(isDone).sort(byDue)];
+      const nowN=items.filter(t=>!isDone(t)&&needsNow(t)).length;
+      html+=section(freqLabel(+e,u),items,true,'',items.length+' משימות'+(nowN?`, ${nowN} להיום`:''));
+    });
   }
   list.innerHTML=html;
 }
@@ -544,10 +558,10 @@ document.addEventListener('click',e=>{
   if(e.target.closest('#logout')){signOut(auth);return}
   const cr=e.target.closest('[data-close-remind]'); if(cr){reminderClosed[cr.dataset.closeRemind]=true;render();return}
   const li=e.target.closest('li.task'); if(li){openSheet(li.dataset.id);return}
-  const v=e.target.closest('[data-view]'); if(v){view=v.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',b===v));render();return}
   const w=e.target.closest('[data-who]'); if(w){who=w.dataset.who;document.querySelectorAll('[data-who]').forEach(b=>b.setAttribute('aria-pressed',b===w));render();return}
 });
 document.getElementById('addBtn').onclick=()=>openSheet(null);
+document.getElementById('viewSel').onchange=e=>{view=e.target.value;render()};
 
 /* ---------- sheet ---------- */
 const sheet=document.getElementById('sheet'), scrim=document.getElementById('scrim');
